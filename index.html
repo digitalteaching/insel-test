@@ -1,0 +1,1348 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<title>Insel-Test</title>
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<style>
+  :root{--ink:#17404a;--blue:#2f92b5;--blue2:#1e6c88;--line:#b9c7c9;--ok:#2f9e5b;--no:#d4503f}
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{margin:0;height:100%;overflow:hidden;background:#2f92b5;position:fixed;inset:0;width:100%;
+    font:600 16px/1.35 ui-rounded,-apple-system,system-ui,sans-serif;color:var(--ink);
+    -webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+  #c{position:fixed;inset:0;width:100%;height:100%;display:block;touch-action:none}
+  #hud{position:fixed;left:calc(12px + env(safe-area-inset-left));top:calc(10px + env(safe-area-inset-top));display:flex;gap:8px;z-index:5;pointer-events:none}
+  .chip{background:rgba(20,50,60,.88);color:#fff;border-radius:999px;padding:7px 16px;font-size:18px;display:inline-block}
+  .chip b{font-weight:800;margin-left:3px}
+  .bump{animation:bump .42s cubic-bezier(.2,1.6,.4,1)}
+  @keyframes bump{0%{transform:scale(1)}40%{transform:scale(1.3);background:#2f9e5b}100%{transform:scale(1)}}
+  #hint{position:fixed;left:50%;transform:translateX(-50%);top:calc(64px + env(safe-area-inset-top));max-width:min(620px,86vw);background:#fff;border-radius:14px;padding:10px 18px;box-shadow:0 4px 0 var(--line);z-index:5;text-align:center;pointer-events:none}
+  #hint:empty{display:none}
+  #bar{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(12px + env(safe-area-inset-bottom));display:flex;gap:8px;z-index:5;background:rgba(20,50,60,.6);padding:8px;border-radius:22px;max-width:100vw}
+  #bar button{width:92px;height:82px;border:0;border-radius:16px;background:#fff;color:var(--ink);font:700 13px/1.15 ui-rounded,-apple-system,system-ui,sans-serif;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;box-shadow:0 4px 0 var(--line);touch-action:manipulation;padding:2px}
+  #bar button svg{width:38px;height:38px;display:block}
+  #bar button small{font-size:11px;font-weight:600;opacity:.7}
+  #bar button.on{background:#ffd166;box-shadow:0 4px 0 #c8952f}
+  #toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(122px + env(safe-area-inset-bottom));background:rgba(20,50,60,.92);color:#fff;padding:9px 18px;border-radius:12px;z-index:6;opacity:0;transition:opacity .2s;pointer-events:none;max-width:88vw;text-align:center}
+  #toast.show{opacity:1}
+  #task{position:fixed;inset:0;background:rgba(8,32,42,.5);z-index:10;display:flex;justify-content:center;align-items:flex-start;padding:calc(16px + env(safe-area-inset-top)) 14px 14px}
+  #task[hidden]{display:none}
+  .card{position:relative;background:#fff;border-radius:22px;width:min(660px,100%);padding:18px 20px 20px;box-shadow:0 6px 0 var(--line);-webkit-user-select:text;user-select:text}
+  #tx{position:absolute;right:12px;top:12px;width:40px;height:40px;border:0;border-radius:50%;background:#e7eef0;color:var(--ink);font:800 18px/1 system-ui;touch-action:manipulation}
+  #ttag{font-size:14px;color:#5b7b84;display:flex;align-items:center;gap:10px;margin-right:48px}
+  .pips{display:flex;gap:5px}
+  .pips i{width:26px;height:8px;border-radius:4px;background:#dfe8ea}
+  .pips i.now{background:var(--blue)}.pips i.ok{background:var(--ok)}.pips i.no{background:var(--no)}
+  #tq{font-size:23px;line-height:1.28;font-weight:700;margin:12px 0 14px;min-height:60px}
+  #topts{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .opt{min-height:66px;border:0;border-radius:15px;background:#e9f3f6;color:var(--ink);font:700 21px/1.15 ui-rounded,-apple-system,system-ui,sans-serif;box-shadow:0 4px 0 #c5d6db;touch-action:manipulation;padding:6px 10px}
+  .opt.ok{background:var(--ok);color:#fff;box-shadow:0 4px 0 #1f7a45}
+  .opt.no{background:var(--no);color:#fff;box-shadow:0 4px 0 #a33627;animation:shake .32s}
+  @keyframes shake{25%{transform:translateX(-7px)}75%{transform:translateX(7px)}}
+  #tform{display:flex;gap:10px}
+  #tform[hidden]{display:none}
+  #tin{flex:1;min-width:0;height:60px;border:3px solid #c5d6db;border-radius:14px;padding:0 14px;font:700 22px/1 ui-rounded,-apple-system,system-ui,sans-serif;color:var(--ink);outline:0;-webkit-user-select:text;user-select:text}
+  #tin:focus{border-color:var(--blue)}
+  .btn{height:60px;padding:0 22px;border:0;border-radius:14px;background:var(--blue);color:#fff;font:700 19px/1 ui-rounded,-apple-system,system-ui,sans-serif;box-shadow:0 4px 0 var(--blue2);touch-action:manipulation}
+  .btn.alt{background:#e9f3f6;color:var(--ink);box-shadow:0 4px 0 #c5d6db}
+  #tfb{margin-top:12px;font-weight:700;min-height:22px}
+  #tfb.ok{color:#1f7a45}#tfb.no{color:#a33627}
+  #tact{display:flex;gap:10px;justify-content:flex-end;margin-top:12px}
+  #tact:empty{display:none}
+  @media (max-width:620px){#bar button{width:64px;height:70px;font-size:11px}#tq{font-size:20px}.opt{font-size:18px}}
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<div id="hud"><span class="chip" id="cw">Holz<b>0</b></span><span class="chip" id="cs">Stein<b>0</b></span></div>
+<div id="hint"></div>
+<div id="toast"></div>
+<div id="bar"></div>
+<div id="task" hidden><div class="card">
+  <button id="tx" aria-label="Schließen">✕</button>
+  <div id="ttag"></div>
+  <div id="tq"></div>
+  <div id="topts"></div>
+  <form id="tform" hidden autocomplete="off"><input id="tin" autocapitalize="off" autocorrect="off" spellcheck="false" inputmode="text" enterkeyhint="done"><button class="btn">Prüfen</button></form>
+  <div id="tfb"></div>
+  <div id="tact"></div>
+</div></div>
+
+<script type="text/plain" id="pack">PAKET: Irregular verbs – be bis hold
+KENNUNG: englisch6-irregular-verbs-be-hold
+FACH: Englisch
+ZEITDRUCK: lang
+
+=== TRAINER 1 ===
+NAME: Mila
+THEMA: Alle Formen (fast) gleich: bet, cost, cut, hit, fit, beat
+HALLO: Hello! I'm Mila. My net is ready, and so are my verbs.
+HALLO: Here in the bay, some verbs never change: cut, cut, cut!
+HALLO: Only one of my verbs changes at the end. Can you find it?
+SIEG: What a catch! You know all my lazy verbs.
+NIEDERLAGE: Almost! Mend your net and try again.
+REVANCHE: The tide is back. Shall we play again?
+
+FRAGE: Wie heißt „wetten“ auf Englisch?
+ANTWORT: bet
+FALSCH: beat | bite | hit
+
+FRAGE: Wie heißt „kosten“ (Geld kosten) auf Englisch?
+ANTWORT: cost
+FALSCH: buy | cut | catch
+
+FRAGE: Wie heißt „schneiden“ auf Englisch?
+ANTWORT: cut
+FALSCH: cost | hit | catch
+
+FRAGE: Wie heißt „passen“ auf Englisch? Es beginnt mit f.
+ANTWORT: fit
+
+FRAGE: Ergänze die Reihe: bet – ___ – bet
+ANTWORT: bet
+FALSCH: bets | bat | betting
+
+FRAGE: Ergänze die Reihe: cut – cut – ___
+ANTWORT: cut
+FALSCH: cutted | cutten | cuts
+
+FRAGE: Ergänze die Reihe: hit – ___ – hit
+ANTWORT: hit
+FALSCH: hitted | hat | hitten
+
+FRAGE: Ergänze die Reihe: cost – cost – ___
+ANTWORT: cost
+
+FRAGE: Ergänze die Reihe: fit – ___ – fit
+ANTWORT: fit
+AUCH RICHTIG: fitted
+FALSCH: fitten | fits | fat
+
+FRAGE: Ergänze die Reihe: beat – ___ – beaten
+ANTWORT: beat
+FALSCH: beaten | beated | bet
+
+FRAGE: Ergänze die Reihe: beat – beat – ___
+ANTWORT: beaten
+FALSCH: beat | beated | beatten
+
+FRAGE: Ergänze im simple past: Yesterday I ___ (cut) my finger.
+ANTWORT: cut
+FALSCH: cutted | cuts | cutting
+
+FRAGE: Ergänze im simple past: Last year my new bike ___ (cost) 90 pounds.
+ANTWORT: cost
+FALSCH: costed | costs | costing
+
+FRAGE: Ergänze im simple past: In the last match our team ___ (beat) the Blue Sharks.
+ANTWORT: beat
+FALSCH: beaten | beated | beats
+
+FRAGE: Ergänze im simple past: Yesterday Lisa ___ (hit) the ball very hard.
+ANTWORT: hit
+
+FRAGE: Ergänze im simple past: Last summer my old jeans still ___ (fit) me.
+ANTWORT: fit
+AUCH RICHTIG: fitted
+
+FRAGE: Ergänze im simple past: Yesterday Ben ___ (bet) his sister a chocolate bar.
+ANTWORT: bet
+
+FRAGE: Zu welchem Verb gehört die Form „beaten“?
+ANTWORT: beat
+FALSCH: bet | bite | hit
+
+FRAGE: Bilde den Satz im simple past: „Ich habe mir gestern in den Finger geschnitten.“
+SATZ: I cut my finger yesterday.
+EXTRA: cutted | cuts
+
+FRAGE: Bilde den Satz im simple past: „Der Ball traf das Fenster.“
+SATZ: The ball hit the window.
+EXTRA: hitted | hits
+
+FRAGE: Bilde den Satz im simple past: „Das Ticket kostete fünf Pfund.“
+SATZ: The ticket cost five pounds.
+EXTRA: costed | costs
+
+FRAGE: Bilde den Satz im simple past: „Unsere Mannschaft besiegte die Lions.“
+SATZ: Our team beat the Lions.
+EXTRA: beaten | beated
+
+FRAGE: Bilde den Satz im simple past: „Die Schuhe passten mir gut.“
+SATZ: The shoes fit me well.
+EXTRA: fits | fitten
+
+=== TRAINER 2 ===
+NAME: Finn
+THEMA: Formen auf -ought und -aught: bring, buy, catch, fight
+HALLO: Shh … the trees are listening. I'm Finn.
+HALLO: Listen: bought, brought, caught. They all sound the same!
+HALLO: But be careful: bought and brought are not twins.
+SIEG: You heard the forest well. Well done!
+NIEDERLAGE: Rest under the old oak, then try again.
+REVANCHE: The leaves are whispering. Ready for another round?
+
+FRAGE: Wie heißt „kaufen“ auf Englisch?
+ANTWORT: buy
+FALSCH: cost | bring | catch
+
+FRAGE: Wie heißt „fangen“ auf Englisch?
+ANTWORT: catch
+FALSCH: fight | find | fall
+
+FRAGE: Wie heißt „(mit)bringen“ auf Englisch?
+ANTWORT: bring
+FALSCH: buy | build | begin
+
+FRAGE: Wie heißt „(sich) streiten“ auf Englisch? Es beginnt mit f.
+ANTWORT: fight
+
+FRAGE: Ergänze die Reihe: buy – ___ – bought
+ANTWORT: bought
+FALSCH: buyed | brought | baught
+
+FRAGE: Ergänze die Reihe: buy – bought – ___
+ANTWORT: bought
+
+FRAGE: Ergänze die Reihe: bring – ___ – brought
+ANTWORT: brought
+FALSCH: bought | bringed | brang
+
+FRAGE: Ergänze die Reihe: bring – brought – ___
+ANTWORT: brought
+
+FRAGE: Ergänze die Reihe: catch – caught – ___
+ANTWORT: caught
+FALSCH: catched | cought | caughten
+
+FRAGE: Ergänze die Reihe: fight – ___ – fought
+ANTWORT: fought
+FALSCH: fighted | faught | fight
+
+FRAGE: Ergänze die Reihe: fight – fought – ___
+ANTWORT: fought
+
+FRAGE: Zu welchem Verb gehört die Form „brought“?
+ANTWORT: bring
+FALSCH: buy | break | burn
+
+FRAGE: Zu welchem Verb gehört die Form „bought“?
+ANTWORT: buy
+FALSCH: bring | break | fight
+
+FRAGE: Ergänze im simple past: Last Saturday Mum ___ (buy) a new tent.
+ANTWORT: bought
+FALSCH: brought | buyed | buys
+
+FRAGE: Ergänze im simple past: Yesterday I ___ (bring) my guitar to school.
+ANTWORT: brought
+FALSCH: bought | bringed | brang
+
+FRAGE: Ergänze im simple past: Last night our cat ___ (catch) a mouse.
+ANTWORT: caught
+FALSCH: catched | catches | cought
+
+FRAGE: Ergänze im simple past: Yesterday the twins ___ (fight) about the TV remote.
+ANTWORT: fought
+
+FRAGE: Bilde den Satz im simple past: „Ich kaufte Brot und Milch.“
+SATZ: I bought bread and milk.
+EXTRA: brought | buyed
+
+FRAGE: Bilde den Satz im simple past: „Sie brachte ihren Hund mit in den Park.“
+SATZ: She brought her dog to the park.
+EXTRA: bought | bringed
+
+FRAGE: Bilde den Satz im simple past: „Ben fing den Ball mit einer Hand.“
+SATZ: Ben caught the ball with one hand.
+EXTRA: catched | cought
+
+FRAGE: Bilde den Satz im simple past: „Die Kinder stritten sich um die Kekse.“
+SATZ: The children fought over the biscuits.
+EXTRA: fighted | fight
+
+FRAGE: Bilde den Satz im simple past: „Gestern erwischte ich den Bus um acht.“
+SATZ: Yesterday I caught the bus at eight.
+EXTRA: catched | catch
+
+=== TRAINER 3 ===
+NAME: Rosie
+THEMA: Kurze Formen auf -t oder -d: build, burn, deal (with), dream, feel, feed
+HALLO: Hello, dear! I'm Rosie. Mind the boardwalk, it's wet.
+HALLO: I felt the rain, I fed my frogs, I built my hut.
+HALLO: My verbs end in t or d. Can you hear it?
+SIEG: My basket is full of right answers. Thank you!
+NIEDERLAGE: No mushrooms today. Come back and pick again!
+REVANCHE: Fresh mushrooms came up overnight. Another round?
+
+FRAGE: Wie heißt „bauen“ auf Englisch?
+ANTWORT: build
+FALSCH: bring | burn | break
+
+FRAGE: Wie heißt „träumen“ auf Englisch?
+ANTWORT: dream
+FALSCH: drink | draw | drive
+
+FRAGE: Wie heißt „füttern“ auf Englisch?
+ANTWORT: feed
+FALSCH: feel | fall | find
+
+FRAGE: Wie heißt „fühlen“ auf Englisch?
+ANTWORT: feel
+FALSCH: feed | fall | fly
+
+FRAGE: Wie heißt „sich befassen mit; umgehen mit“ auf Englisch?
+ANTWORT: deal with
+AUCH RICHTIG: deal (with) | deal
+
+FRAGE: Ergänze die Reihe: build – ___ – built
+ANTWORT: built
+FALSCH: builded | build | bilt
+
+FRAGE: Ergänze die Reihe: feel – ___ – felt
+ANTWORT: felt
+FALSCH: fell | feeled | fed
+
+FRAGE: Ergänze die Reihe: feed – fed – ___
+ANTWORT: fed
+FALSCH: feeded | felt | feed
+
+FRAGE: Ergänze die Reihe: burn – ___ – burnt
+ANTWORT: burnt
+AUCH RICHTIG: burned
+FALSCH: burn | burnted | brent
+
+FRAGE: Ergänze die Reihe: dream – ___ – dreamt
+ANTWORT: dreamt
+AUCH RICHTIG: dreamed
+
+FRAGE: Ergänze die Reihe: deal (with) – ___ – dealt (with)
+ANTWORT: dealt
+AUCH RICHTIG: dealt (with) | dealt with
+
+FRAGE: Zu welchem Verb gehört die Form „felt“?
+ANTWORT: feel
+FALSCH: fall | feed | fly
+
+FRAGE: Zu welchem Verb gehört die Form „fed“?
+ANTWORT: feed
+FALSCH: feel | fall | fight
+
+FRAGE: Ergänze im simple past: Last night I ___ (dream) about a big green dragon.
+ANTWORT: dreamt
+AUCH RICHTIG: dreamed
+FALSCH: dreams | dremt | dreamen
+
+FRAGE: Ergänze im simple past: In 2019 my grandpa ___ (build) a tree house for us.
+ANTWORT: built
+FALSCH: builded | build | builds
+
+FRAGE: Ergänze im simple past: Last week our teacher ___ (deal) with the problem very calmly.
+ANTWORT: dealt
+FALSCH: dealed | deals | delt
+
+FRAGE: Ergänze im simple past: Yesterday I ___ (feel) really tired after the long walk.
+ANTWORT: felt
+
+FRAGE: Ergänze im simple past: This morning Lea ___ (feed) the ducks on the pond.
+ANTWORT: fed
+
+FRAGE: Ergänze im simple past: Last weekend our campfire ___ (burn) for three hours.
+ANTWORT: burnt
+AUCH RICHTIG: burned
+
+FRAGE: Bilde den Satz im simple past: „Wir bauten eine Sandburg am Strand.“
+SATZ: We built a sandcastle on the beach.
+EXTRA: builded | build
+
+FRAGE: Bilde den Satz im simple past: „Ich fühlte mich heute Morgen krank.“
+SATZ: I felt ill this morning.
+EXTRA: fell | feeled
+
+FRAGE: Bilde den Satz im simple past: „Der Junge fütterte die Hühner.“
+SATZ: The boy fed the chickens.
+EXTRA: feeded | felt
+
+FRAGE: Bilde den Satz im simple past: „Mia träumte von einem Pony.“
+SATZ: Mia dreamt about a pony.
+EXTRA: dreams | dremt
+
+FRAGE: Bilde den Satz im simple past: „Ich verbrannte mir die Finger.“
+SATZ: I burnt my fingers.
+EXTRA: burn | burnted
+
+=== TRAINER 4 ===
+NAME: Tarek
+THEMA: Zweite und dritte Form gleich: find, get, hang, have, hear, hold
+HALLO: Welcome, traveller! I'm Tarek. Look into my mirror.
+HALLO: In my mirror, two forms look the same: found and found, held and held.
+SIEG: Your answers shine like my mirror. Safe travels!
+NIEDERLAGE: The sand is hot today. Have some water and try again.
+REVANCHE: The caravan is ready. Shall we go once more?
+
+FRAGE: Wie heißt „hören“ auf Englisch?
+ANTWORT: hear
+FALSCH: hold | have | hide
+
+FRAGE: Wie heißt „(fest)halten“ auf Englisch?
+ANTWORT: hold
+FALSCH: hit | hang | have
+
+FRAGE: Wie heißt „bekommen“ auf Englisch?
+ANTWORT: get
+FALSCH: become | give | go
+
+FRAGE: Wie heißt „hängen“ auf Englisch?
+ANTWORT: hang
+
+FRAGE: Ergänze die Reihe: find – ___ – found
+ANTWORT: found
+FALSCH: finded | fand | find
+
+FRAGE: Ergänze die Reihe: hear – ___ – heard
+ANTWORT: heard
+FALSCH: heared | hard | hered
+
+FRAGE: Ergänze die Reihe: hold – held – ___
+ANTWORT: held
+FALSCH: holded | hold | helt
+
+FRAGE: Ergänze die Reihe: have – ___ – had
+ANTWORT: had
+FALSCH: haved | has | hat
+
+FRAGE: Ergänze die Reihe: get – ___ – got
+ANTWORT: got
+FALSCH: getted | gat | get
+
+FRAGE: Ergänze die Reihe: get – got – ___
+ANTWORT: got
+AUCH RICHTIG: gotten
+
+FRAGE: Ergänze die Reihe: hang – ___ – hung
+ANTWORT: hung
+
+FRAGE: Zu welchem Verb gehört die Form „heard“?
+ANTWORT: hear
+FALSCH: have | hold | hide
+
+FRAGE: Zu welchem Verb gehört die Form „held“?
+ANTWORT: hold
+FALSCH: hide | have | hit
+
+FRAGE: Ergänze im simple past: Yesterday I ___ (find) a wallet in the park.
+ANTWORT: found
+FALSCH: finded | find | fand
+
+FRAGE: Ergänze im simple past: Last night we ___ (hear) a strange noise in the garden.
+ANTWORT: heard
+FALSCH: heared | hear | hears
+
+FRAGE: Ergänze im simple past: Last Christmas I ___ (get) a new bike.
+ANTWORT: got
+FALSCH: getted | gets | became
+
+FRAGE: Ergänze im simple past: On Monday we ___ (have) pizza for lunch.
+ANTWORT: had
+
+FRAGE: Ergänze im simple past: Yesterday Dad ___ (hang) the new picture over the sofa.
+ANTWORT: hung
+
+FRAGE: Ergänze im simple past: At the zoo the little girl ___ (hold) her mum's hand.
+ANTWORT: held
+
+FRAGE: Bilde den Satz im simple past: „Ich fand meinen Schlüssel unter dem Bett.“
+SATZ: I found my key under the bed.
+EXTRA: finded | find
+
+FRAGE: Bilde den Satz im simple past: „Wir hatten eine tolle Zeit am Strand.“
+SATZ: We had a great time at the beach.
+EXTRA: haved | has
+
+FRAGE: Bilde den Satz im simple past: „Sie hörte die Musik im Garten.“
+SATZ: She heard the music in the garden.
+EXTRA: heared | hears
+
+FRAGE: Bilde den Satz im simple past: „Er bekam einen Brief von seiner Oma.“
+SATZ: He got a letter from his grandma.
+EXTRA: became | getted
+
+FRAGE: Bilde den Satz im simple past: „Wir hängten die Fotos an die Wand.“
+SATZ: We hung the photos on the wall.
+EXTRA: hanged | hang
+
+=== TRAINER 5 ===
+NAME: Kira
+THEMA: Ein o in der zweiten Form: break, choose, drive, freeze, forget
+HALLO: Hi! I'm Kira. Hold on tight, it's windy up here!
+HALLO: Broke, chose, drove, froze, forgot. Can you hear all the o's?
+SIEG: Wow, you flew past every question!
+NIEDERLAGE: The wind was too strong today. Try again soon!
+REVANCHE: The wind is perfect again. One more flight?
+
+FRAGE: Wie heißt „(aus)wählen“ auf Englisch?
+ANTWORT: choose
+FALSCH: chose | cut | catch
+
+FRAGE: Wie heißt „vergessen“ auf Englisch?
+ANTWORT: forget
+FALSCH: forgive | forgot | fight
+
+FRAGE: Wie heißt „(zer)brechen“ auf Englisch?
+ANTWORT: break
+FALSCH: bring | build | beat
+
+FRAGE: Wie heißt „gefrieren“ auf Englisch? Es beginnt mit f.
+ANTWORT: freeze
+
+FRAGE: Ergänze die Reihe: break – ___ – broken
+ANTWORT: broke
+FALSCH: breaked | brook | broken
+
+FRAGE: Ergänze die Reihe: break – broke – ___
+ANTWORT: broken
+FALSCH: broke | breaked | brocken
+
+FRAGE: Ergänze die Reihe: choose – ___ – chosen
+ANTWORT: chose
+FALSCH: choosed | chosen | choose
+
+FRAGE: Ergänze die Reihe: choose – chose – ___
+ANTWORT: chosen
+
+FRAGE: Ergänze die Reihe: drive – ___ – driven
+ANTWORT: drove
+FALSCH: drived | driven | drive
+
+FRAGE: Ergänze die Reihe: drive – drove – ___
+ANTWORT: driven
+
+FRAGE: Ergänze die Reihe: forget – ___ – forgotten
+ANTWORT: forgot
+FALSCH: forgetted | forgotten | forgave
+
+FRAGE: Ergänze die Reihe: forget – forgot – ___
+ANTWORT: forgotten
+
+FRAGE: Ergänze die Reihe: freeze – froze – ___
+ANTWORT: frozen
+FALSCH: froze | freezed | frozzen
+
+FRAGE: Ergänze im simple past: Last winter the lake ___ (freeze) completely.
+ANTWORT: froze
+FALSCH: freezed | frozen | freezes
+
+FRAGE: Ergänze im simple past: Yesterday I ___ (forget) my PE bag at home.
+ANTWORT: forgot
+FALSCH: forgotten | forgetted | forget
+
+FRAGE: Ergänze im simple past: Last Sunday Mum ___ (drive) us to the beach.
+ANTWORT: drove
+FALSCH: drived | driven | drives
+
+FRAGE: Ergänze im simple past: Oh no! Yesterday I ___ (break) my glasses.
+ANTWORT: broke
+
+FRAGE: Ergänze im simple past: At the café Leo ___ (choose) the chocolate cake.
+ANTWORT: chose
+
+FRAGE: Bilde den Satz im simple past: „Tim zerbrach gestern die Vase.“
+SATZ: Tim broke the vase yesterday.
+EXTRA: breaked | broken
+
+FRAGE: Bilde den Satz im simple past: „Ich vergaß meine Hausaufgaben.“
+SATZ: I forgot my homework.
+EXTRA: forgotten | forgetted
+
+FRAGE: Bilde den Satz im simple past: „Wir wählten einen roten Drachen.“
+SATZ: We chose a red kite.
+EXTRA: choosed | choose
+
+FRAGE: Bilde den Satz im simple past: „Papa fuhr uns zum Bahnhof.“
+SATZ: Dad drove us to the station.
+EXTRA: drived | driven
+
+FRAGE: Bilde den Satz im simple past: „Das Wasser im Eimer gefror.“
+SATZ: The water in the bucket froze.
+EXTRA: frozen | freezed
+
+=== TRAINER 6 ===
+NAME: Theo
+THEMA: Neuer Vokal, dritte Form auf -en: bite, hide, eat, fall, give, forgive
+HALLO: Tick, tock! I'm Theo, the inventor of these ruins.
+HALLO: My machine changes the vowel: give, gave. Then it adds -en: given!
+SIEG: Brilliant! Your answers run like clockwork.
+NIEDERLAGE: A cog got stuck. Let's fix it and try again!
+REVANCHE: I oiled my gears. Ready for a new test?
+
+FRAGE: Wie heißt „beißen“ auf Englisch?
+ANTWORT: bite
+FALSCH: beat | bet | build
+
+FRAGE: Wie heißt „(sich) verstecken“ auf Englisch?
+ANTWORT: hide
+FALSCH: hold | hear | hang
+
+FRAGE: Wie heißt „vergeben; verzeihen“ auf Englisch?
+ANTWORT: forgive
+FALSCH: forget | give | feel
+
+FRAGE: Ergänze die Reihe: eat – ___ – eaten
+ANTWORT: ate
+FALSCH: eated | eaten | aten
+
+FRAGE: Ergänze die Reihe: eat – ate – ___
+ANTWORT: eaten
+
+FRAGE: Ergänze die Reihe: fall – ___ – fallen
+ANTWORT: fell
+FALSCH: felt | falled | fall
+
+FRAGE: Ergänze die Reihe: fall – fell – ___
+ANTWORT: fallen
+
+FRAGE: Ergänze die Reihe: give – ___ – given
+ANTWORT: gave
+FALSCH: gived | given | gove
+
+FRAGE: Ergänze die Reihe: give – gave – ___
+ANTWORT: given
+
+FRAGE: Ergänze die Reihe: bite – ___ – bitten
+ANTWORT: bit
+FALSCH: bited | bitten | bat
+
+FRAGE: Ergänze die Reihe: bite – bit – ___
+ANTWORT: bitten
+
+FRAGE: Ergänze die Reihe: hide – hid – ___
+ANTWORT: hidden
+FALSCH: hid | hided | hiden
+
+FRAGE: Ergänze die Reihe: forgive – ___ – forgiven
+ANTWORT: forgave
+FALSCH: forgived | forgot | forgiven
+
+FRAGE: Ergänze die Reihe: forgive – forgave – ___
+ANTWORT: forgiven
+
+FRAGE: Zu welchem Verb gehört die Form „fell“?
+ANTWORT: fall
+FALSCH: feel | fly | feed
+
+FRAGE: Ergänze im simple past: Yesterday a mosquito ___ (bite) me on the arm.
+ANTWORT: bit
+FALSCH: bited | bitten | bites
+
+FRAGE: Ergänze im simple past: Last night I ___ (fall) asleep on the sofa.
+ANTWORT: fell
+FALSCH: felt | falled | fallen
+
+FRAGE: Ergänze im simple past: For my last birthday Grandma ___ (give) me a book.
+ANTWORT: gave
+FALSCH: given | gived | gives
+
+FRAGE: Ergänze im simple past: Yesterday we ___ (eat) spaghetti for dinner.
+ANTWORT: ate
+
+FRAGE: Ergänze im simple past: During the game we ___ (hide) behind the big tree.
+ANTWORT: hid
+
+FRAGE: Ergänze im simple past: In the end my best friend ___ (forgive) me.
+ANTWORT: forgave
+
+FRAGE: Bilde den Satz im simple past: „Wir aßen Eis im Park.“
+SATZ: We ate ice cream in the park.
+EXTRA: eated | eaten
+
+FRAGE: Bilde den Satz im simple past: „Ein Apfel fiel vom Baum.“
+SATZ: An apple fell from the tree.
+EXTRA: felt | fallen
+
+FRAGE: Bilde den Satz im simple past: „Die Katze versteckte sich unter dem Tisch.“
+SATZ: The cat hid under the table.
+EXTRA: hided | hidden
+
+FRAGE: Bilde den Satz im simple past: „Ich gab meiner Schwester ein Geschenk.“
+SATZ: I gave my sister a present.
+EXTRA: gived | given
+
+FRAGE: Bilde den Satz im simple past: „Sie verzieh ihrem kleinen Bruder.“
+SATZ: She forgave her little brother.
+EXTRA: forgived | forgot
+
+=== TRAINER 7 ===
+NAME: Ingrid
+THEMA: Reimverben und i – a – u: draw, fly, grow, begin, drink
+HALLO: Brrr! Welcome to the frozen lake. I'm Ingrid.
+HALLO: Drew, flew, grew: my verbs rhyme like a song on the ice.
+HALLO: And listen: begin, began, begun. Drink, drank, drunk!
+SIEG: Your answers are as bright as the northern lights!
+NIEDERLAGE: Warm your hands by the fire, then try again.
+REVANCHE: The ice is thick enough. Shall we play again?
+
+FRAGE: Wie heißt „zeichnen“ auf Englisch?
+ANTWORT: draw
+FALSCH: drive | drink | dream
+
+FRAGE: Wie heißt „wachsen“ auf Englisch?
+ANTWORT: grow
+FALSCH: give | go | get
+
+FRAGE: Wie heißt „fliegen“ auf Englisch?
+ANTWORT: fly
+FALSCH: fall | flew | feel
+
+FRAGE: Wie heißt „trinken“ auf Englisch?
+ANTWORT: drink
+
+FRAGE: Ergänze die Reihe: draw – ___ – drawn
+ANTWORT: drew
+FALSCH: drawed | drawn | drow
+
+FRAGE: Ergänze die Reihe: draw – drew – ___
+ANTWORT: drawn
+
+FRAGE: Ergänze die Reihe: fly – ___ – flown
+ANTWORT: flew
+FALSCH: flied | flown | flyed
+
+FRAGE: Ergänze die Reihe: fly – flew – ___
+ANTWORT: flown
+
+FRAGE: Ergänze die Reihe: grow – ___ – grown
+ANTWORT: grew
+FALSCH: growed | grown | grow
+
+FRAGE: Ergänze die Reihe: grow – grew – ___
+ANTWORT: grown
+
+FRAGE: Ergänze die Reihe: begin – ___ – begun
+ANTWORT: began
+FALSCH: begun | beginned | begann
+
+FRAGE: Ergänze die Reihe: begin – began – ___
+ANTWORT: begun
+FALSCH: began | beginned | begon
+
+FRAGE: Ergänze die Reihe: drink – drank – ___
+ANTWORT: drunk
+FALSCH: drank | drinked | drunken
+
+FRAGE: Zu welchem Verb gehört die Form „grew“?
+ANTWORT: grow
+FALSCH: draw | fly | give
+
+FRAGE: Ergänze im simple past: Yesterday the lesson ___ (begin) at eight o'clock.
+ANTWORT: began
+FALSCH: begun | beginned | begins
+
+FRAGE: Ergänze im simple past: After the match I ___ (drink) a big glass of water.
+ANTWORT: drank
+FALSCH: drunk | drinked | drinks
+
+FRAGE: Ergänze im simple past: In the art lesson Emma ___ (draw) a horse.
+ANTWORT: drew
+FALSCH: drawed | drawn | draws
+
+FRAGE: Ergänze im simple past: Last summer we ___ (fly) to Spain.
+ANTWORT: flew
+
+FRAGE: Ergänze im simple past: Last year my little sister ___ (grow) ten centimetres.
+ANTWORT: grew
+
+FRAGE: Bilde den Satz im simple past: „Ein Vogel flog über das Haus.“
+SATZ: A bird flew over the house.
+EXTRA: flied | flown
+
+FRAGE: Bilde den Satz im simple past: „Der Film begann um sieben.“
+SATZ: The film began at seven.
+EXTRA: begun | beginned
+
+FRAGE: Bilde den Satz im simple past: „Ich trank heißen Kakao.“
+SATZ: I drank hot chocolate.
+EXTRA: drunk | drinked
+
+FRAGE: Bilde den Satz im simple past: „Opa baute Tomaten im Garten an.“
+SATZ: Grandpa grew tomatoes in the garden.
+EXTRA: growed | grown
+
+FRAGE: Bilde den Satz im simple past: „Lina zeichnete ein Bild von ihrem Hund.“
+SATZ: Lina drew a picture of her dog.
+EXTRA: drawed | drawn
+
+=== TRAINER 8 ===
+NAME: Stella
+THEMA: Die Superstars: be, do, go, come, become, dazu Verben der ganzen Seite
+HALLO: Good evening! I'm Stella. Look through my telescope.
+HALLO: The brightest stars are be, do, go, come and become.
+HALLO: Tonight every verb from the list may shine. Are you ready?
+SIEG: You shine brighter than any star tonight!
+NIEDERLAGE: Even stars need rest. Look at the list and come back.
+REVANCHE: The stars have moved. Shall we read them again?
+
+FRAGE: Wie heißt „werden“ auf Englisch? Gesucht ist die Grundform.
+ANTWORT: become
+FALSCH: became | come | begin
+
+FRAGE: Ergänze die Reihe: be – ___ – been
+ANTWORT: was / were
+AUCH RICHTIG: was/were | was, were | was or were | was | were
+
+FRAGE: Ergänze die Reihe: be – was/were – ___
+ANTWORT: been
+FALSCH: being | was | beed
+
+FRAGE: Ergänze die Reihe: do – ___ – done
+ANTWORT: did
+FALSCH: done | doed | dit
+
+FRAGE: Ergänze die Reihe: do – did – ___
+ANTWORT: done
+
+FRAGE: Ergänze die Reihe: go – ___ – gone
+ANTWORT: went
+FALSCH: goed | gone | wented
+
+FRAGE: Ergänze die Reihe: go – went – ___
+ANTWORT: gone
+
+FRAGE: Ergänze die Reihe: come – ___ – come
+ANTWORT: came
+FALSCH: comed | come | kam
+
+FRAGE: Ergänze die Reihe: come – came – ___
+ANTWORT: come
+
+FRAGE: Ergänze die Reihe: become – ___ – become
+ANTWORT: became
+
+FRAGE: Ergänze die Reihe: become – became – ___
+ANTWORT: become
+FALSCH: became | becomed | becomen
+
+FRAGE: Ergänze im simple past: Last summer we ___ (be) in Italy for two weeks.
+ANTWORT: were
+FALSCH: was | been | are
+
+FRAGE: Ergänze im simple past: Yesterday I ___ (be) very tired.
+ANTWORT: was
+FALSCH: were | been | am
+
+FRAGE: Ergänze im simple past: Last Friday my class ___ (go) to the zoo.
+ANTWORT: went
+FALSCH: goed | gone | goes
+
+FRAGE: Ergänze im simple past: Last weekend my cousin ___ (come) to visit us.
+ANTWORT: came
+FALSCH: comed | come | comes
+
+FRAGE: Ergänze im simple past: Yesterday we ___ (do) a lot of homework.
+ANTWORT: did
+FALSCH: done | doed | do
+
+FRAGE: Ergänze im simple past: Last year my aunt ___ (become) a doctor.
+ANTWORT: became
+FALSCH: become | becomed | came
+
+FRAGE: Welcher Satz ist richtig? „Sie fühlte sich nach dem Film traurig.“
+FORM: auswahl
+ANTWORT: She felt sad after the film.
+FALSCH: She fell sad after the film. | She feeled sad after the film. | She fed sad after the film.
+
+FRAGE: Welcher Satz ist richtig? „Ich bekam einen Brief von meiner Tante.“
+FORM: auswahl
+ANTWORT: I got a letter from my aunt.
+FALSCH: I became a letter from my aunt. | I getted a letter from my aunt. | I gotten a letter from my aunt.
+
+FRAGE: Welcher Satz ist richtig? „Tom brachte seinen Fußball mit in die Schule.“
+FORM: auswahl
+ANTWORT: Tom brought his football to school.
+FALSCH: Tom bought his football to school. | Tom bringed his football to school. | Tom brang his football to school.
+
+FRAGE: Welche Reihe von go ist richtig?
+FORM: auswahl
+ANTWORT: go – went – gone
+FALSCH: go – gone – went | go – goed – gone | go – went – went
+
+FRAGE: Welche Reihe von come ist richtig?
+FORM: auswahl
+ANTWORT: come – came – come
+FALSCH: come – came – came | come – comed – come | come – come – came
+
+FRAGE: Bilde den Satz im simple past: „Gestern war ich im Kino.“
+SATZ: Yesterday I was at the cinema.
+EXTRA: were | been
+
+FRAGE: Bilde den Satz im simple past: „Wir gingen nach der Schule nach Hause.“
+SATZ: We went home after school.
+EXTRA: goed | gone
+
+FRAGE: Bilde den Satz im simple past: „Meine Freunde kamen zu meiner Party.“
+SATZ: My friends came to my party.
+EXTRA: come | comed
+
+FRAGE: Bilde den Satz im simple past: „Ich machte meine Hausaufgaben in der Küche.“
+SATZ: I did my homework in the kitchen.
+EXTRA: done | doed
+
+FRAGE: Bilde den Satz im simple past: „Die Raupe wurde ein Schmetterling.“
+SATZ: The caterpillar became a butterfly.
+EXTRA: become | got
+
+FRAGE: Bilde den Satz im simple past: „Ich fiel hin, aber ich fühlte mich gut.“
+SATZ: I fell, but I felt fine.
+EXTRA: falled | feeled
+
+FRAGE: Bilde den Satz im simple past: „Sie kaufte Brot und brachte es nach Hause.“
+SATZ: She bought bread and brought it home.
+EXTRA: buyed | bringed
+
+=== ENDGEGNER ===
+HALLO: Who is there? Nobody comes down here any more.
+HALLO: I keep everything that was forgotten. Forget, forgot, forgotten …
+SIEG: You remembered all of them … Maybe I am not alone after all.
+NIEDERLAGE: The mist is thick tonight. Rest, and then try again.
+
+=== ZETTEL ===
+FRAGE: Wie heißt „essen“ auf Englisch?
+ANTWORT: eat
+
+FRAGE: Wie heißt „finden“ auf Englisch?
+ANTWORT: find
+FALSCH: found | fight | feel
+
+FRAGE: Wie heißt „geben“ auf Englisch?
+ANTWORT: give
+FALSCH: get | gave | go
+
+FRAGE: Wie heißt „gehen“ auf Englisch?
+ANTWORT: go
+
+FRAGE: Wie heißt „kommen“ auf Englisch?
+ANTWORT: come
+FALSCH: came | become | cost
+
+FRAGE: Wie heißt „haben“ auf Englisch?
+ANTWORT: have
+
+FRAGE: Wie heißt „beginnen“ auf Englisch?
+ANTWORT: begin
+FALSCH: began | bring | become
+
+FRAGE: Wie heißt „(ein Auto) fahren“ auf Englisch?
+ANTWORT: drive
+FALSCH: draw | drink | drove
+
+FRAGE: Wie heißt „(ver)brennen“ auf Englisch?
+ANTWORT: burn
+
+FRAGE: Wie heißt „sein“ auf Englisch? Gesucht ist die Grundform.
+ANTWORT: be
+FALSCH: is | was | been
+
+FRAGE: Wie heißt „(hin)fallen“ auf Englisch?
+ANTWORT: fall
+FALSCH: fell | feel | fly
+
+FRAGE: Wie heißt „tun“ auf Englisch?
+ANTWORT: do
+FALSCH: did | done | go
+
+FRAGE: Was heißt „hit“ auf Deutsch?
+FORM: auswahl
+ANTWORT: schlagen; treffen
+FALSCH: halten | hängen | heißen
+
+FRAGE: Was heißt „beat“ auf Deutsch?
+FORM: auswahl
+ANTWORT: schlagen; besiegen
+FALSCH: beißen | bauen | wetten
+
+FRAGE: Was heißt „hold“ auf Deutsch?
+FORM: auswahl
+ANTWORT: (fest)halten
+FALSCH: hören | holen | hängen
+
+FRAGE: Was heißt „get“ auf Deutsch?
+FORM: auswahl
+ANTWORT: bekommen; erhalten
+FALSCH: geben | gehen | vergessen
+
+FRAGE: Was heißt „become“ auf Deutsch?
+FORM: auswahl
+ANTWORT: werden
+FALSCH: bekommen | kommen | beginnen
+
+FRAGE: Was heißt „fit“ auf Deutsch?
+FORM: auswahl
+ANTWORT: passen
+FALSCH: fühlen | finden | füttern
+
+FRAGE: Was heißt „grow“ auf Deutsch?
+FORM: auswahl
+ANTWORT: wachsen; anbauen; züchten
+FALSCH: geben | grüßen | gehen
+
+FRAGE: Was heißt „draw“ auf Deutsch?
+FORM: auswahl
+ANTWORT: zeichnen; ziehen
+FALSCH: trinken | fahren | träumen
+</script>
+<script>
+'use strict';
+const $=id=>document.getElementById(id);
+const cv=$('c'),x=cv.getContext('2d',{alpha:false});
+const N=24,TW=72,TH=36,ZH=30,BH=1.25,MAXH=6,HALF=N/2;
+let DPR=1,S=1,W=0,H=0,vw=0,vh=0,sea=null;
+const key=(i,j)=>i*100+j;
+const rng=s=>()=>{s|=0;s=s+0x6D2B79F5|0;let t=Math.imul(s^s>>>15,1|s);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296};
+const R=rng(11);
+const mod=(a,b)=>((a%b)+b)%b;
+
+/* ---------- Lernpaket ---------- */
+function parsePack(text){
+  const out=[],split=v=>v.split('|').map(s=>s.trim()).filter(Boolean);let sec=null,cur=null;
+  const end=()=>{if(cur&&sec==='t'&&cur.a)out.push(cur);cur=null};
+  for(const raw of text.split(/\r?\n/)){
+    const l=raw.trim();
+    if(!l){end();continue}
+    if(l[0]==='#')continue;
+    const m=l.match(/^={2,}\s*(.+?)\s*={2,}$/);
+    if(m){end();sec=/^TRAINER/i.test(m[1])?'t':'x';continue}
+    const c=l.indexOf(':');if(c<0)continue;
+    const k=l.slice(0,c).trim().toUpperCase(),v=l.slice(c+1).trim();
+    if(k==='FRAGE'){end();cur={q:v,a:null,also:[],wrong:[],form:null};continue}
+    if(!cur)continue;
+    if(k==='ANTWORT')cur.a=v;else if(k==='AUCH RICHTIG')cur.also=split(v);else if(k==='FALSCH')cur.wrong=split(v);else if(k==='FORM')cur.form=v.toLowerCase();
+  }
+  end();return out;
+}
+const shuffle=a=>{for(let i=a.length-1;i>0;i--){const j=Math.random()*(i+1)|0;[a[i],a[j]]=[a[j],a[i]]}return a};
+const QUESTIONS=parsePack($('pack').textContent);
+let queue=shuffle(QUESTIONS.slice());
+const nextQuestion=()=>{if(!queue.length)queue=shuffle(QUESTIONS.slice());return queue.shift()};
+const norm=s=>s.trim().toLowerCase().replace(/[’`´]/g,"'").replace(/\s+/g,' ').replace(/[.!?,;:]+$/,'');
+
+/* ---------- Welt ---------- */
+function radial(i,j){const u=i+.5-HALF,v=j+.5-HALF,a=Math.atan2(v,u);return Math.hypot(u,v)/(10.6*(1+.09*Math.sin(a*3+.6)+.05*Math.sin(a*5)))}
+const G=[];for(let i=0;i<N;i++){G[i]=[];for(let j=0;j<N;j++){const r=radial(i,j);G[i][j]=r>1?null:r>.82?.35:1}}
+const land=(i,j)=>i>=0&&j>=0&&i<N&&j<N&&G[i][j]!=null;
+const res={wood:0,stone:0},stacks=new Map(),floors=new Set(),objs=new Map();
+const LABEL={wood:'Holz',stone:'Stein'};
+
+function putObj(kind,i,j){
+  if(!land(i,j)||(Math.abs(i-12)<3&&Math.abs(j-12)<3))return false;
+  for(let a=-1;a<=1;a++)for(let b=-1;b<=1;b++)if(objs.has(key(i+a,j+b)))return false;
+  objs.set(key(i,j),{kind,i,j,shake:0});return true;
+}
+[[16,10],[8,14],[13,7]].forEach(q=>putObj('palm',q[0],q[1]));
+[[16,14],[9,9]].forEach(q=>putObj('rock',q[0],q[1]));
+putObj('fire',11,16);
+for(let n=0,tries=0;n<8&&tries<600;tries++){const a=R()*N|0,b=R()*N|0;if(radial(a,b)>.62&&putObj('palm',a,b))n++}
+for(let n=0,tries=0;n<3&&tries<600;tries++){const a=R()*N|0,b=R()*N|0;if(radial(a,b)>.5&&putObj('rock',a,b))n++}
+
+const hero={x:12.5,y:12.5,z:1,phase:0,face:1};
+let path=[],arrive=null,camX=0,camY=hero.x*TH-30,camFree=false,marker=null;
+
+/* Boden vorzeichnen */
+const LS=Math.min(1.6,window.devicePixelRatio||1),LW=N*TW+40,LH=N*TH+130,LO=LW/2,LT=80;
+const layer=document.createElement('canvas');layer.width=LW*LS;layer.height=LH*LS;
+(function(){
+  const l=layer.getContext('2d');l.setTransform(LS,0,0,LS,0,0);
+  const Q=(a,b,z)=>[LO+(a-b)*TW/2,LT+(a+b)*TH/2-z*ZH];
+  const poly=(p,c)=>{l.beginPath();p.forEach((q,n)=>n?l.lineTo(q[0],q[1]):l.moveTo(q[0],q[1]));l.closePath();l.fillStyle=c;l.fill()};
+  for(let i=0;i<N;i++)for(let j=0;j<N;j++){const r=radial(i,j);if(r>1&&r<1.16)poly([Q(i,j,0),Q(i+1,j,0),Q(i+1,j+1,0),Q(i,j+1,0)],'rgba(150,232,226,.42)')}
+  for(let s=0;s<=2*N-2;s++)for(let i=0;i<N;i++){
+    const j=s-i;if(j<0||j>=N||G[i][j]==null)continue;
+    const z=G[i][j],sand=z<.5,alt=(i+j)%2===0;
+    poly([Q(i,j+1,z),Q(i+1,j+1,z),Q(i+1,j+1,-.4),Q(i,j+1,-.4)],sand?'#cdb077':'#7d8a4f');
+    poly([Q(i+1,j,z),Q(i+1,j+1,z),Q(i+1,j+1,-.4),Q(i+1,j,-.4)],sand?'#b89a63':'#6b7743');
+    poly([Q(i,j,z),Q(i+1,j,z),Q(i+1,j+1,z),Q(i,j+1,z)],sand?(alt?'#efdba3':'#e9d296'):(alt?'#62b257':'#5aa84f'));
+  }
+})();
+
+const waves=[];for(let n=0;n<70;n++)waves.push([R()*1600,R()*1100]);
+const P=(a,b,z=0)=>[vw/2-camX+(a-b)*TW/2,vh/2-camY+(a+b)*TH/2-z*ZH];
+
+function resize(){
+  W=innerWidth;H=innerHeight;DPR=Math.min(2,devicePixelRatio||1);
+  cv.width=W*DPR;cv.height=H*DPR;
+  S=Math.max(.62,Math.min(1.12,Math.min(W/1000,H/680)));vw=W/S;vh=H/S;
+  sea=x.createLinearGradient(0,0,0,H*DPR);sea.addColorStop(0,'#3aa6c4');sea.addColorStop(1,'#2a86ad');
+}
+addEventListener('resize',resize);resize();
+
+/* ---------- Zeichnen ---------- */
+const poly=(p,c)=>{x.beginPath();p.forEach((q,n)=>n?x.lineTo(q[0],q[1]):x.moveTo(q[0],q[1]));x.closePath();x.fillStyle=c;x.fill()};
+const shadow=(X,Y,a,b)=>{x.fillStyle='rgba(0,0,0,.2)';x.beginPath();x.ellipse(X,Y,a,b,0,0,7);x.fill()};
+const line=(a,b,c,w)=>{x.strokeStyle=c;x.lineWidth=w;x.beginPath();x.moveTo(a[0],a[1]);x.lineTo(b[0],b[1]);x.stroke()};
+const FRONDS=[[-2.9,'#2b8a48'],[-.25,'#2b8a48'],[-2.25,'#3ba65a'],[-.9,'#3ba65a'],[-1.6,'#4fbd6c'],[.35,'#37a055'],[-3.5,'#37a055']];
+function palm(o,t){
+  const b=P(o.i+.5,o.j+.5,G[o.i][o.j]),sh=o.shake>0?Math.sin(t/28)*o.shake*7:0,sw=Math.sin(t/900+o.i)*.035;
+  shadow(b[0],b[1],26,12);
+  const T=[b[0]+22+sh,b[1]-104];
+  x.strokeStyle='#8c5f38';x.lineWidth=13;x.lineCap='round';x.beginPath();x.moveTo(b[0],b[1]);x.quadraticCurveTo(b[0]-8,b[1]-56,T[0],T[1]);x.stroke();
+  x.strokeStyle='#a87643';x.lineWidth=4;x.beginPath();x.moveTo(b[0]-3,b[1]);x.quadraticCurveTo(b[0]-11,b[1]-56,T[0]-3,T[1]);x.stroke();
+  for(const f of FRONDS){x.save();x.translate(T[0],T[1]);x.rotate(f[0]+sw);x.fillStyle=f[1];x.beginPath();x.moveTo(0,0);x.quadraticCurveTo(38,-20,86,14);x.quadraticCurveTo(42,6,0,0);x.fill();x.restore()}
+  x.fillStyle='#6b4326';x.beginPath();x.arc(T[0],T[1],8,0,7);x.fill();
+}
+function rock(o,t){
+  const b=P(o.i+.5,o.j+.5,G[o.i][o.j]),X=b[0]+(o.shake>0?Math.sin(t/28)*o.shake*5:0),Y=b[1];
+  shadow(X,Y+2,36,15);
+  poly([[X-32,Y],[X-26,Y-24],[X-6,Y-40],[X+18,Y-34],[X+32,Y-10],[X+26,Y+6],[X-14,Y+10]],'#8f939b');
+  poly([[X-26,Y-24],[X-6,Y-40],[X+18,Y-34],[X+4,Y-20],[X-14,Y-16]],'#b3b7bf');
+  poly([[X+4,Y-20],[X+18,Y-34],[X+32,Y-10],[X+26,Y+6],[X+6,Y+8]],'#74787f');
+}
+function fire(o,t){
+  const b=P(o.i+.5,o.j+.5,G[o.i][o.j]),f=1+Math.sin(t/90)*.08+Math.sin(t/37)*.05;
+  shadow(b[0],b[1]+2,28,13);
+  [[-18,0],[18,0],[-9,9],[9,9],[-9,-8],[9,-8]].forEach(q=>{x.fillStyle='#8d8d94';x.beginPath();x.ellipse(b[0]+q[0],b[1]+q[1],9,6,0,0,7);x.fill()});
+  [['#e8552d',20,46],['#f6912f',14,34],['#ffd166',7,20]].forEach(q=>{const h=q[2]*f;x.fillStyle=q[0];x.beginPath();x.moveTo(b[0]-q[1],b[1]);x.quadraticCurveTo(b[0]-q[1],b[1]-h*.6,b[0],b[1]-h);x.quadraticCurveTo(b[0]+q[1],b[1]-h*.6,b[0]+q[1],b[1]);x.closePath();x.fill()});
+}
+const BLK={wood:{t:'#dcb27a',l:'#c8925a',r:'#a87444',d:'rgba(70,40,15,.3)'},stone:{t:'#bcc1c8',l:'#9a9fa7',r:'#7f848b',d:'rgba(40,40,50,.22)'}};
+function cube(i,j,z,h,type){
+  const T=z+h,c=BLK[type];
+  const a=P(i,j+1,T),b=P(i+1,j+1,T),d=P(i+1,j,T),e=P(i,j,T);
+  poly([a,b,P(i+1,j+1,z),P(i,j+1,z)],c.l);poly([d,b,P(i+1,j+1,z),P(i+1,j,z)],c.r);poly([e,d,b,a],c.t);
+  for(const f of[1/3,2/3]){const q=z+h*f;line(P(i,j+1,q),P(i+1,j+1,q),c.d,2);line(P(i+1,j,q),P(i+1,j+1,q),c.d,2)}
+  if(type==='wood'){line(P(i+.33,j,T),P(i+.33,j+1,T),c.d,2);line(P(i+.66,j,T),P(i+.66,j+1,T),c.d,2)}
+  else{line(P(i+.25,j+.3,T),P(i+.6,j+.2,T),c.d,2);line(P(i+.4,j+.7,T),P(i+.8,j+.62,T),c.d,2)}
+  line(a,b,'rgba(255,255,255,.22)',1.5);line(b,d,'rgba(255,255,255,.22)',1.5);
+}
+function stack(s,t){
+  const g=G[s.i][s.j];
+  s.list.forEach((ty,n)=>{
+    let h=BH;
+    if(n===s.list.length-1){const e=Math.min(1,(t-s.t)/160);h=BH*(1+2.2*Math.pow(e-1,3)+1.2*Math.pow(e-1,2))}
+    cube(s.i,s.j,g+BH*n,h,ty);
+  });
+}
+function floorTile(i,j){
+  const z=G[i][j]+.01;
+  poly([P(i,j,z),P(i+1,j,z),P(i+1,j+1,z),P(i,j+1,z)],'#b8a586');
+  poly([P(i+.08,j+.08,z),P(i+.92,j+.08,z),P(i+.92,j+.92,z),P(i+.08,j+.92,z)],'#cfbd9d');
+  line(P(i+.08,j+.5,z),P(i+.92,j+.5,z),'rgba(90,70,40,.28)',2);line(P(i+.5,j+.08,z),P(i+.5,j+.92,z),'rgba(90,70,40,.28)',2);
+}
+function rr(X,Y,w,h,r,c){x.fillStyle=c;x.beginPath();x.moveTo(X+r,Y);x.arcTo(X+w,Y,X+w,Y+h,r);x.arcTo(X+w,Y+h,X,Y+h,r);x.arcTo(X,Y+h,X,Y,r);x.arcTo(X,Y,X+w,Y,r);x.closePath();x.fill()}
+function drawHero(){
+  const b=P(hero.x,hero.y,hero.z),walking=path.length>0,sw=walking?Math.sin(hero.phase)*7:0,bob=walking?Math.abs(Math.cos(hero.phase))*3:0,f=hero.face;
+  shadow(b[0],b[1],19,9);
+  const Y=b[1]-bob;
+  x.fillStyle='#3a4a7a';x.fillRect(b[0]-10,Y-24+Math.max(0,sw)*.4,8,24-Math.max(0,sw)*.4);x.fillRect(b[0]+2,Y-24+Math.max(0,-sw)*.4,8,24-Math.max(0,-sw)*.4);
+  rr(b[0]+(f>0?-23:7),Y-54,16,30,6,'#8a5a32');
+  rr(b[0]-14,Y-56,28,36,9,'#e8743b');
+  x.fillStyle='#f0c39a';x.beginPath();x.arc(b[0],Y-70,15,0,7);x.fill();
+  x.fillStyle='#5b3a22';x.beginPath();x.arc(b[0],Y-73,15.5,Math.PI,0);x.fill();
+  x.fillStyle='#222';x.beginPath();x.arc(b[0]+f*5,Y-69,2,0,7);x.arc(b[0]+f*11,Y-69,2,0,7);x.fill();
+}
+
+function draw(t){
+  x.setTransform(1,0,0,1,0,0);x.fillStyle=sea;x.fillRect(0,0,cv.width,cv.height);
+  x.setTransform(DPR*S,0,0,DPR*S,0,0);
+  x.strokeStyle='rgba(255,255,255,.22)';x.lineWidth=3;x.lineCap='round';x.beginPath();
+  for(const w of waves){const X=mod(w[0]-camX+t*.008,vw+60)-30,Y=mod(w[1]-camY,vh+30)-15;x.moveTo(X,Y);x.lineTo(X+26,Y+13)}
+  x.stroke();
+  x.drawImage(layer,vw/2-camX-LO,vh/2-camY-LT,LW,LH);
+  for(const k of floors)floorTile(k/100|0,k%100);
+  if(marker){const a=1-(t-marker.t)/420;if(a<=0)marker=null;else{const z=G[marker.i][marker.j]+.02;poly([P(marker.i,marker.j,z),P(marker.i+1,marker.j,z),P(marker.i+1,marker.j+1,z),P(marker.i,marker.j+1,z)],`rgba(255,255,255,${a*.55})`)}}
+  const list=[];
+  for(const o of objs.values())list.push([o.i+o.j+1,o.kind==='palm'?()=>palm(o,t):o.kind==='rock'?()=>rock(o,t):()=>fire(o,t)]);
+  for(const s of stacks.values())list.push([s.i+s.j+1,()=>stack(s,t)]);
+  list.push([hero.x+hero.y+.01,drawHero]);
+  list.sort((a,b)=>a[0]-b[0]).forEach(q=>q[1]());
+}
+
+/* ---------- Laufen ---------- */
+const passable=(i,j)=>land(i,j)&&!objs.has(key(i,j))&&!stacks.has(key(i,j));
+function route(si,sj,goals){
+  if(goals.has(key(si,sj)))return[];
+  const prev=new Map([[key(si,sj),null]]),q=[[si,sj]];
+  const D=[[1,0],[-1,0],[0,1],[0,-1],[1,1],[1,-1],[-1,1],[-1,-1]];
+  for(let h=0;h<q.length;h++){
+    const[a,b]=q[h];
+    for(const[u,v]of D){
+      const c=a+u,d=b+v,k=key(c,d);
+      if(prev.has(k)||!passable(c,d))continue;
+      if(u&&v&&(!passable(a+u,b)||!passable(a,b+v)))continue;
+      prev.set(k,[a,b]);
+      if(goals.has(k)){const out=[[c,d]];let p=[a,b];while(p&&(p[0]!==si||p[1]!==sj)){out.unshift(p);p=prev.get(key(p[0],p[1]))}return out}
+      q.push([c,d]);
+    }
+  }
+  return null;
+}
+function heroTile(){return[Math.floor(hero.x),Math.floor(hero.y)]}
+function startTile(){return path.length?path[0]:heroTile()}
+function walkTo(goals,then){
+  const[a,b]=startTile(),r=route(a,b,goals);
+  if(r==null){toast('Da kommst du gerade nicht hin.');return false}
+  path=(path.length?[path[0]]:[]).concat(r);arrive=then||null;camFree=false;
+  if(!path.length&&arrive){const f=arrive;arrive=null;f()}
+  return true;
+}
+function update(dt,t){
+  if(path.length){
+    const[ti,tj]=path[0],tx=ti+.5,ty=tj+.5,dx=tx-hero.x,dy=ty-hero.y,d=Math.hypot(dx,dy);
+    const sp=floors.has(key(...heroTile()))?7:4.3,step=sp*dt;
+    const sc=dx-dy;if(Math.abs(sc)>.01)hero.face=sc>0?1:-1;
+    hero.phase+=dt*(sp*2.6);
+    if(step>=d){hero.x=tx;hero.y=ty;path.shift();if(!path.length&&arrive){const f=arrive;arrive=null;f()}}
+    else{hero.x+=dx/d*step;hero.y+=dy/d*step}
+  }
+  const[a,b]=heroTile();if(land(a,b))hero.z+=(G[a][b]-hero.z)*Math.min(1,dt*12);
+  if(!camFree){const tx=(hero.x-hero.y)*TW/2,ty=(hero.x+hero.y)*TH/2-30,e=Math.min(1,dt*5);camX+=(tx-camX)*e;camY+=(ty-camY)*e}
+  for(const o of objs.values())if(o.shake>0)o.shake=Math.max(0,o.shake-dt*2);
+}
+let last=performance.now();
+function frame(t){const dt=Math.min(.05,(t-last)/1000);last=t;update(dt,t);draw(t);requestAnimationFrame(frame)}
+
+/* ---------- Tippen ---------- */
+function inPoly(px,py,p){let c=false;for(let i=0,j=p.length-1;i<p.length;j=i++){if((p[i][1]>py)!==(p[j][1]>py)&&px<(p[j][0]-p[i][0])*(py-p[i][1])/(p[j][1]-p[i][1])+p[i][0])c=!c}return c}
+function tileAt(px,py){
+  for(let s=2*N-2;s>=0;s--)for(let i=Math.min(s,N-1);i>=0&&s-i<N;i--){
+    const j=s-i;if(!land(i,j))continue;
+    const g=G[i][j],st=stacks.get(key(i,j)),T=g+(st?st.list.length*BH:0);
+    if(inPoly(px,py,[P(i,j,T),P(i+1,j,T),P(i+1,j,g),P(i+1,j+1,g),P(i,j+1,g),P(i,j+1,T)]))return{i,j};
+  }
+  return null;
+}
+function objHit(px,py){
+  let best=null,bd=-1;
+  for(const o of objs.values()){
+    if(o.kind==='fire')continue;
+    const b=P(o.i+.5,o.j+.5,G[o.i][o.j]),dx=px-b[0],dy=py-b[1];
+    const hit=o.kind==='palm'?(Math.abs(dx-8)<58&&dy<16&&dy>-168):(Math.abs(dx)<40&&dy<20&&dy>-46);
+    if(hit&&o.i+o.j>bd){best=o;bd=o.i+o.j}
+  }
+  return best;
+}
+function tap(sx,sy){
+  const px=sx/S,py=sy/S;
+  if(tool){const q=tileAt(px,py);if(q)build(q.i,q.j);return}
+  const o=objHit(px,py);
+  if(o){
+    const goals=new Set();
+    for(let a=-1;a<=1;a++)for(let b=-1;b<=1;b++)if((a||b)&&passable(o.i+a,o.j+b))goals.add(key(o.i+a,o.j+b));
+    if(goals.size)walkTo(goals,()=>{const s=(o.i+.5-hero.x)-(o.j+.5-hero.y);if(Math.abs(s)>.01)hero.face=s>0?1:-1;o.shake=1;openTask(o)});
+    return;
+  }
+  const q=tileAt(px,py);
+  if(q&&passable(q.i,q.j)){marker={i:q.i,j:q.j,t:performance.now()};walkTo(new Set([key(q.i,q.j)]))}
+}
+let ptr=null;
+cv.addEventListener('pointerdown',e=>{if(ptr)return;ptr={id:e.pointerId,x:e.clientX,y:e.clientY,cx:camX,cy:camY,moved:false}});
+cv.addEventListener('pointermove',e=>{
+  if(!ptr||e.pointerId!==ptr.id)return;
+  const dx=e.clientX-ptr.x,dy=e.clientY-ptr.y;
+  if(!ptr.moved&&Math.hypot(dx,dy)>12)ptr.moved=true;
+  if(ptr.moved){camFree=true;camX=Math.max(-N*TW/2,Math.min(N*TW/2,ptr.cx-dx/S));camY=Math.max(0,Math.min(N*TH,ptr.cy-dy/S))}
+});
+const up=e=>{if(!ptr||e.pointerId!==ptr.id)return;const p=ptr;ptr=null;if(!p.moved&&e.type==='pointerup')tap(e.clientX,e.clientY)};
+cv.addEventListener('pointerup',up);cv.addEventListener('pointercancel',up);
+
+/* ---------- Bauen ---------- */
+let tool=null,step=0,placed=0;
+const cubeSvg=(t,l,r)=>`<svg viewBox="0 0 40 40"><path d="M20 4 36 12 20 20 4 12z" fill="${t}"/><path d="M4 12 20 20V37L4 29z" fill="${l}"/><path d="M36 12 20 20V37L36 29z" fill="${r}"/></svg>`;
+const TOOLS=[
+  [null,'Laufen','', '<svg viewBox="0 0 40 40" fill="none" stroke="#17404a" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"><circle cx="22" cy="7" r="4" fill="#17404a" stroke="none"/><path d="M21 14 17 25l8 5 2 8M17 25l-5 12M20 15l9 6M20 15l-8 5"/></svg>'],
+  ['wood','Holzblock','1 Holz',cubeSvg('#dcb27a','#c8925a','#a87444')],
+  ['stone','Steinblock','1 Stein',cubeSvg('#bcc1c8','#9a9fa7','#7f848b')],
+  ['path','Weg','1 Stein','<svg viewBox="0 0 40 40"><path d="M20 10 37 20 20 30 3 20z" fill="#cfbd9d" stroke="#b8a586" stroke-width="2"/><path d="M11.5 15 28.500 25M28.500 15 11.500 25" stroke="#9a8667" stroke-width="2"/></svg>'],
+  ['del','Abbauen','zurück','<svg viewBox="0 0 40 40" fill="none" stroke-linecap="round"><path d="M12 33 29 10" stroke="#a06f40" stroke-width="5"/><path d="M15 7c8-3 16 0 20 8" stroke="#8d939b" stroke-width="6"/></svg>']
+];
+$('bar').innerHTML=TOOLS.map((q,n)=>`<button data-n="${n}">${q[3]}<span>${q[1]}</span>${q[2]?`<small>${q[2]}</small>`:''}</button>`).join('');
+function setTool(n){tool=TOOLS[n][0];[...$('bar').children].forEach((b,k)=>b.classList.toggle('on',k===n));if(tool){path=[];arrive=null}hint()}
+$('bar').addEventListener('click',e=>{const b=e.target.closest('button');if(b)setTool(+b.dataset.n)});
+setTool(0);
+
+let toastT=0;
+function toast(s){const t=$('toast');t.textContent=s;t.classList.add('show');clearTimeout(toastT);toastT=setTimeout(()=>t.classList.remove('show'),1900)}
+function bump(el){el.classList.remove('bump');void el.offsetWidth;el.classList.add('bump')}
+function counts(which){$('cw').lastChild.textContent=res.wood;$('cs').lastChild.textContent=res.stone;if(which)bump(which==='wood'?$('cw'):$('cs'))}
+function need(t){toast(`Zu wenig ${LABEL[t]}. Löse ${t==='wood'?'an einer Palme':'an einem Felsen'} Aufgaben.`)}
+function hint(){
+  const h=$('hint');
+  if(step===0)h.textContent='Tippe auf eine Palme und löse dort Aufgaben.';
+  else if(step===1)h.textContent=tool?'Tippe jetzt auf die Insel, um dort zu bauen.':'Wähle unten den Holzblock.';
+  else if(step===2)h.textContent='Tippe auf denselben Block, dann stapelst du. Mit „Laufen“ bist du wieder unterwegs.';
+  else h.textContent='';
+}
+function build(i,j){
+  const k=key(i,j);
+  if(objs.has(k)){toast('Hier steht schon etwas.');return}
+  if(tool==='del'){
+    const s=stacks.get(k);
+    if(s){const ty=s.list.pop();res[ty]++;if(!s.list.length)stacks.delete(k);else s.t=0;counts(ty)}
+    else if(floors.has(k)){floors.delete(k);res.stone++;counts('stone')}
+    else toast('Hier gibt es nichts abzubauen.');
+    return;
+  }
+  if(tool==='path'){
+    if(stacks.has(k)){toast('Auf Blöcken gibt es keinen Weg.');return}
+    if(floors.has(k))return;
+    if(res.stone<1){need('stone');return}
+    res.stone--;floors.add(k);counts('stone');return;
+  }
+  const[a,b]=heroTile();
+  if(a===i&&b===j){toast('Hier stehst du gerade.');return}
+  const s=stacks.get(k)||{i,j,list:[],t:0};
+  if(s.list.length>=MAXH){toast('Höher geht es in diesem Test nicht.');return}
+  if(res[tool]<1){need(tool);return}
+  res[tool]--;s.list.push(tool);s.t=performance.now();stacks.set(k,s);counts(tool);
+  placed++;if(step===1){step=2;hint()}else if(step===2&&placed>=4){step=3;hint()}
+}
+
+/* ---------- Aufgaben ---------- */
+const GAIN=2,ROUND=3;
+let T=null,timer=0;
+function openTask(o){T={kind:o.kind==='palm'?'wood':'stone',place:o.kind==='palm'?'Palme':'Felsen',n:0,marks:[],gain:0};$('task').hidden=false;ask()}
+function closeTask(){clearTimeout(timer);$('tin').blur();$('task').hidden=true;scrollTo(0,0);if(T&&T.gain>0&&step===0){step=1}hint();T=null}
+function head(){return `<span>${T.place}</span><span class="pips">${Array.from({length:ROUND},(_,k)=>`<i class="${T.marks[k]||(k===T.n?'now':'')}"></i>`).join('')}</span>`}
+function ask(){
+  const q=T.q=nextQuestion();
+  $('ttag').innerHTML=head();$('tq').textContent=q.q;$('tfb').textContent='';$('tfb').className='';$('tact').innerHTML='';
+  const opts=$('topts');opts.innerHTML='';
+  const choice=q.wrong.length>=3&&q.form!=='eintippen';
+  $('tform').hidden=choice;
+  if(choice){
+    shuffle([q.a,...shuffle(q.wrong.slice()).slice(0,3)]).forEach(v=>{const b=document.createElement('button');b.className='opt';b.textContent=v;b.onclick=()=>{if(!T.done){const good=v===q.a||q.also.map(norm).includes(norm(v));[...opts.children].forEach(c=>{if(c.textContent===q.a)c.classList.add('ok')});if(!good)b.classList.add('no');finish(good)}};opts.append(b)});
+  }else{const i=$('tin');i.value='';i.disabled=false;setTimeout(()=>i.focus(),60)}
+  T.done=false;
+}
+$('tform').addEventListener('submit',e=>{
+  e.preventDefault();
+  if(!T||T.done)return;
+  const v=$('tin').value;if(!v.trim())return;
+  const good=[T.q.a,...T.q.also].map(norm).includes(norm(v));
+  $('tin').disabled=true;$('tin').blur();scrollTo(0,0);finish(good);
+});
+function finish(good){
+  T.done=true;const q=T.q,fb=$('tfb');
+  T.marks[T.n]=good?'ok':'no';$('ttag').innerHTML=head();
+  if(good){
+    res[T.kind]+=GAIN;T.gain+=GAIN;counts(T.kind);
+    fb.className='ok';fb.textContent=`Richtig! +${GAIN} ${LABEL[T.kind]}`;
+    timer=setTimeout(advance,800);
+  }else{
+    queue.splice(Math.min(4,queue.length),0,q);
+    fb.className='no';fb.textContent=`Richtig wäre: ${q.a}. Die Frage kommt später noch einmal.`;
+    $('tact').innerHTML='<button class="btn" id="tgo">Weiter</button>';$('tgo').onclick=advance;
+  }
+}
+function advance(){if(!T)return;T.n++;if(T.n<ROUND)ask();else summary()}
+function summary(){
+  $('ttag').innerHTML=head();$('topts').innerHTML='';$('tform').hidden=true;$('tfb').textContent='';
+  $('tq').textContent=T.gain?`Geschafft! Du hast ${T.gain} ${LABEL[T.kind]} bekommen.`:`Diesmal gab es kein ${LABEL[T.kind]}. Die Fragen kommen wieder, versuch es gleich noch einmal.`;
+  $('tact').innerHTML='<button class="btn alt" id="tmore">Noch 3 Fragen</button><button class="btn" id="tback">Zurück zur Insel</button>';
+  $('tback').onclick=closeTask;
+  $('tmore').onclick=()=>{T.n=0;T.marks=[];ask()};
+}
+$('tx').onclick=closeTask;
+
+hint();counts();requestAnimationFrame(frame);
+window.__insel={P,hero,res,objs,stacks,floors,get S(){return S},get T(){return T},QUESTIONS};
+</script>
+</body>
+</html>
